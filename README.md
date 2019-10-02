@@ -2,9 +2,9 @@
 CSC10007 - Operating System project #1 - Simple shell interface
 
 ### Feature list
-- [ ] Executing Command in a Child Process
+- [x] Executing Command in a Child Process
   - Creating the child process and executing the command in the child
-- [ ] Creating a History Feature
+- [x] Creating a History Feature
   - Providing a history feature
 - [ ] Redirecting Input and Output
   - Adding support of input and output redirection
