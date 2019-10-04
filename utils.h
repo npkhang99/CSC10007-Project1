@@ -1,15 +1,17 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
+#include <assert.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
 #include <string>
 #include <vector>
-#include <ctype.h>
-#include <string.h>
-#include <stdlib.h>
 
 std::string fmt_to_string(const char* format, ...) {
+    assert(strlen(format) < 256);
     char buffer[256];
     va_list args;
     va_start(args, format);
@@ -38,10 +40,13 @@ std::vector<std::string> split(const std::string& st, char delimiter = ' ') {
             tmp += st[i];
         }
         else {
-            splts.push_back(trim(tmp));
+            if (tmp.length() > 0) {
+                splts.push_back(trim(tmp));
+            }
             tmp = "";
         }
     }
+
     splts.push_back(trim(tmp));
     return splts;
 }

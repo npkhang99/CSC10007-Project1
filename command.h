@@ -5,17 +5,85 @@
 #include <vector>
 #include <unistd.h>
 #include <assert.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "utils.h"
 
 class command {
 private:
+    std::string raw_command;
     std::vector<std::string> _cmd;
     std::vector<std::vector<std::string>> _args;
     int _size;
 
-    int _execute(int i) const {
-        return execvp(_cmd[i].c_str(), to_char_arr(_args[i]));
+    bool _have_io_redirect() const {
+        int input_redirect = -1;
+        int output_redirect = -1;
+        for (int i = 0; i < _args[0].size(); i++) {
+            if (_args[0][i] == "<") {
+                assert(input_redirect == -1);
+                input_redirect = i;
+            }
+            if (_args[0][i] == ">") {
+                assert(output_redirect == -1);
+                output_redirect = i;
+            }
+        }
+        return input_redirect != -1 || output_redirect != -1;
+    }
+
+    std::vector<std::string> _get_io_redirect_files() const {
+        int input_redirect = -1;
+        int output_redirect = -1;
+        for (int i = 0; i < _args[0].size(); i++) {
+            if (_args[0][i] == "<") {
+                input_redirect = i;
+            }
+            if (_args[0][i] == ">") {
+                output_redirect = i;
+            }
+        }
+
+        std::string input_file_name = (input_redirect != -1)? _args[0][input_redirect + 1] : "";
+        std::string output_file_name = (output_redirect != -1)? _args[0][output_redirect + 1] : "";
+        
+        std::vector<std::string> io_files;
+        io_files.push_back(input_file_name);
+        io_files.push_back(output_file_name);
+
+        return io_files;
+    }
+
+    int _execute(int cmd_id) const {
+        if (_have_io_redirect()) {
+            std::vector<std::string> io_file_names = _get_io_redirect_files();
+            if (io_file_names[0].length() > 0) {
+                int in = open(io_file_names[0].c_str(), O_RDONLY);
+                dup2(in, STDIN_FILENO);
+                close(in);
+            }
+            if (io_file_names[1].length() > 0) {
+                int out = open(io_file_names[1].c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IWUSR | S_IWGRP | S_IWOTH | S_IRUSR | S_IRGRP | S_IROTH);
+                dup2(out, STDOUT_FILENO);
+                close(out);
+            }
+        }
+
+        std::vector<std::vector<std::string>> args = _args;
+        for (int i = 0; i < args[cmd_id].size(); i++) {
+            while (i < (int) args[cmd_id].size() && (args[cmd_id][i] == ">" || args[cmd_id][i] == "<")) {
+                args[cmd_id].erase(args[cmd_id].begin() + i, args[cmd_id].begin() + i + 2);
+            }
+        }
+
+        if (args[cmd_id].back() == "&") {
+            args[cmd_id].pop_back();
+            return execvp(args[cmd_id][0].c_str(), to_char_arr(args[cmd_id]));
+        }
+
+        return execvp(args[cmd_id][0].c_str(), to_char_arr(args[cmd_id]));
     }
 
 public:
@@ -24,6 +92,7 @@ public:
         _cmd.clear();
         _args.clear();
 
+        raw_command = raw;
         if (raw.find("!!") != std::string::npos && trim(raw).size() != 2) {
             throw "History command must be a stand-alone command";
         }
@@ -81,6 +150,10 @@ public:
         return _cmd[0] == "!!";
     }
 
+    bool is_background_process() const {
+        return _args[0].back() == "&";
+    }
+
     int execute() const {
         if (_size == 1) {
             return _execute(0);
@@ -88,6 +161,10 @@ public:
         else {
             return _execute(0);
         }
+    }
+
+    bool have_io_redirect() const {
+        return _have_io_redirect();
     }
 };
 

@@ -16,7 +16,7 @@ int main() {
 
     while (loop) {
         cout << "khang@osh> ";
-        fflush(stdout);
+        cout.flush();
         string raw_cmd;
         getline(cin, raw_cmd);
         if (is_exit(raw_cmd)) {
@@ -42,11 +42,14 @@ int main() {
             }
 
             if (ok_to_execute) {
-                cmd.execute();
+                exit(cmd.execute());
             }
         }
         else {
-            wait_pid = wait(NULL);
+            if (!command(raw_cmd).is_background_process()) {
+                wait_pid = wait(NULL);
+            }
+
             if (!command(raw_cmd).is_history_command()) {
                 history = command(raw_cmd);
             }
