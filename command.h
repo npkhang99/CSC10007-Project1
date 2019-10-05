@@ -59,13 +59,16 @@ private:
     int _execute(int cmd_id) const {
         if (_have_io_redirect()) {
             std::vector<std::string> io_file_names = _get_io_redirect_files();
+            int in = -1, out = -1;
             if (io_file_names[0].length() > 0) {
-                int in = open(io_file_names[0].c_str(), O_RDONLY);
+                in = open(io_file_names[0].c_str(), O_RDONLY);
+                assert(in != -1);
                 dup2(in, STDIN_FILENO);
                 close(in);
             }
             if (io_file_names[1].length() > 0) {
-                int out = open(io_file_names[1].c_str(), O_WRONLY | O_CREAT | O_TRUNC, S_IWUSR | S_IWGRP | S_IWOTH | S_IRUSR | S_IRGRP | S_IROTH);
+                out = open(io_file_names[1].c_str(), O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IRGRP | S_IWGRP | S_IWUSR);
+                assert(out != -1);
                 dup2(out, STDOUT_FILENO);
                 close(out);
             }
