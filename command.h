@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 
 #include "utils.h"
 
@@ -81,6 +82,8 @@ private:
             }
         }
 
+        // std::cerr << fmt_to_string("Executing: %s\n", join(args[cmd_id]).c_str());
+
         if (args[cmd_id].back() == "&") {
             args[cmd_id].pop_back();
             return execvp(args[cmd_id][0].c_str(), to_char_arr(args[cmd_id]));
@@ -102,7 +105,7 @@ public:
 
         std::vector<std::string> parts = split(raw, '|');
         for (std::string cmd : parts) {
-            std::vector<std::string> args = split(cmd);
+            std::vector<std::string> args = split(trim(cmd));
             _cmd.push_back(args[0]);
             _args.push_back(args);
             _size++;
@@ -162,7 +165,21 @@ public:
             return _execute(0);
         }
         else {
-            return _execute(0);
+            int pipefd[2]; // pipefd[0] = output của lệnh 1 | pipefd[1] = input của lệnh 2
+            pipe(pipefd);
+            pid_t pid = fork();
+            if (pid == 0) {
+                dup2(pipefd[0], 0);
+                // chỉ cần pipe output nên đóng pipe input
+                close(pipefd[1]);
+                _execute(1);
+            }
+            else {
+                dup2(pipefd[1], 1);
+                // chỉ cần pipe input nên đóng pipe output
+                close(pipefd[0]);
+                _execute(0);
+            }
         }
     }
 

@@ -24,6 +24,8 @@ int main() {
         }
 
         pid_t pid = fork();
+        assert(pid != -1);
+
         pid_t wait_pid;
         if (pid == 0) {
             command cmd(raw_cmd);
@@ -42,7 +44,8 @@ int main() {
             }
 
             if (ok_to_execute) {
-                exit(cmd.execute());
+                cmd.execute();
+                break;
             }
         }
         else {
