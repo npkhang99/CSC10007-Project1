@@ -15,7 +15,7 @@ int main() {
     command history;
 
     while (loop) {
-        cout << "khang@osh> ";
+        cout << "capsaicin@8-Methyl-N-vanillyl-trans-6-nonenamide> ";
         cout.flush();
         string raw_cmd;
         getline(cin, raw_cmd);
